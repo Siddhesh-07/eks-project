@@ -1,7 +1,7 @@
 resource "aws_eks_cluster" "project_eks" {
-  name     = var.cluster_name
+  name     = "project-eks"
   role_arn = aws_iam_role.eks_cluster_role.arn
-  version  = var.kubernetes_version
+  version  = "1.36"
 
   vpc_config {
     subnet_ids = [
