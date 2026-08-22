@@ -17,3 +17,13 @@ variable "subnet_pvt2" {
   type    = string
   default = "subnet-098701274d0810681"
 }
+
+variable "cluster_name" {
+  type    = string
+  default = "project-eks"
+}
+
+variable "kubernetes_version" {
+  type    = string
+  default = "1.36"
+}
