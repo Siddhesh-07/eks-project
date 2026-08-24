@@ -8,6 +8,11 @@ variable "vpc_id" {
   default = "vpc-09b1c64c0d5e5b304"
 }
 
+variable "vpc_cidr" {
+  type    = string
+  default = "10.0.0.0/16"
+}
+
 variable "subnet_pvt1" {
   type    = string
   default = "subnet-0bc00b0686835113a"

@@ -17,3 +17,8 @@ output "node_group_name" {
   description = "EKS managed node group name"
   value       = aws_eks_node_group.project_nodes.node_group_name
 }
+
+output "elasticache_redis_endpoint" {
+  description = "ElastiCache Redis primary endpoint"
+  value       = aws_elasticache_replication_group.redis.primary_endpoint_address
+}
