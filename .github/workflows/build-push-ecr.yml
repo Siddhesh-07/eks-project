@@ -1,0 +1,81 @@
+name: Build and Push Images to ECR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/build-push-ecr.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-push:
+    name: Build and Push Microservices
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Step 1: Give this login block an ID so we can steal its outputs
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tag
+        run: |
+          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      # Step 2: Loop through the services dynamically using the dynamic ECR registry output
+      - name: Build and push all services
+        env:
+          # This dynamically catches the login registry, no hardcoding needed!
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          # Define array of services and their exact build context paths
+          services=(
+            "adservice:./src/adservice"
+            "cartservice:./src/cartservice/src"
+            "checkoutservice:./src/checkoutservice"
+            "currencyservice:./src/currencyservice"
+            "emailservice:./src/emailservice"
+            "frontend:./src/frontend"
+            "paymentservice:./src/paymentservice"
+            "productcatalogservice:./src/productcatalogservice"
+            "recommendationservice:./src/recommendationservice"
+            "shippingservice:./src/shippingservice"
+          )
+
+          for service in "${services[@]}"; do
+            # Split the service name from its build directory path
+            NAME="${service%%:*}"
+            PATH_DIR="${service#*:}"
+
+            echo "=== Building and Pushing $NAME from $PATH_DIR ==="
+
+            docker build \
+              -t $ECR_REGISTRY/online-boutique/$NAME:$IMAGE_TAG \
+              $PATH_DIR
+
+            docker push \
+              $ECR_REGISTRY/online-boutique/$NAME:$IMAGE_TAG
+          done
+
+      - name: Display image tag
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          echo "Images successfully pushed with tag: $IMAGE_TAG"
+          echo "ECR Registry used: $ECR_REGISTRY"
