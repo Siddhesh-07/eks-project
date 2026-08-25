@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = "~> 2.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.17"
+    }
   }
 }
 
@@ -21,6 +25,14 @@ provider "kubernetes" {
   host                   = aws_eks_cluster.project_eks.endpoint
   cluster_ca_certificate = base64decode(aws_eks_cluster.project_eks.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.project_eks.token
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = aws_eks_cluster.project_eks.endpoint
+    cluster_ca_certificate = base64decode(aws_eks_cluster.project_eks.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.project_eks.token
+  }
 }
 
 resource "kubernetes_secret" "cart_redis" {
