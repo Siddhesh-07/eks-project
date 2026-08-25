@@ -22,7 +22,7 @@ module "github_actions_role" {
     "${var.github_repository}:ref:refs/heads/${var.github_branch}"
   ]
 
-    policies = {
+  policies = {
     GitHubActionsECR = module.github_actions_ecr_policy.arn
   }
 
