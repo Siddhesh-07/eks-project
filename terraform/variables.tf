@@ -32,3 +32,14 @@ variable "kubernetes_version" {
   type    = string
   default = "1.36"
 }
+
+variable "github_repository" {
+  description = "GitHub repository in owner/repository format"
+  type        = string
+  default     = "Siddhesh-07/eks-project"
+}
+
+variable "github_branch" {
+  type    = string
+  default = "main"
+}

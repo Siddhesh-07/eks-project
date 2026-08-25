@@ -22,3 +22,7 @@ output "elasticache_redis_endpoint" {
   description = "ElastiCache Redis primary endpoint"
   value       = aws_elasticache_replication_group.redis.primary_endpoint_address
 }
+
+output "github_actions_role_arn" {
+  value = module.github_actions_role.arn
+}
