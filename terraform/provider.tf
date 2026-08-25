@@ -34,3 +34,4 @@ resource "kubernetes_secret" "cart_redis" {
   data = {
     "redis-addr" = "${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379"
   }
+}
