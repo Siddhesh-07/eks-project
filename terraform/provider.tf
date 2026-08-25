@@ -18,15 +18,15 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  host                   = data.aws_eks_cluster.cluster.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
+  host                   = aws_eks_cluster.project_eks.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.project_eks.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.project_eks.token
 }
 
 resource "kubernetes_secret" "cart_redis" {
   metadata {
     name      = "cart-redis"
-    namespace = "default" 
+    namespace = "default"
   }
 
   type = "Opaque"

@@ -10,7 +10,6 @@ data "aws_subnet" "private_2" {
   id = var.subnet_pvt2
 }
 
-data "aws_eks_cluster" "cluster" {
-  name = "var.eks_cluster_name" 
+data "aws_eks_cluster_auth" "project_eks" {
+  name = aws_eks_cluster.project_eks.name
 }
-
