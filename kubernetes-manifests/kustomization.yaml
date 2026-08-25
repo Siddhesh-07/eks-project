@@ -40,41 +40,41 @@ resources:
 
 images:
   - name: adservice
-    newName: gcr.io/google-samples/microservices-demo/adservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/adservice
+    newTag: 1f7eb85
 
   - name: cartservice
-    newName: gcr.io/google-samples/microservices-demo/cartservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/cartservice
+    newTag: 1f7eb85
 
   - name: checkoutservice
-    newName: gcr.io/google-samples/microservices-demo/checkoutservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/checkoutservice
+    newTag: 1f7eb85
 
   - name: currencyservice
-    newName: gcr.io/google-samples/microservices-demo/currencyservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/currencyservice
+    newTag: 1f7eb85
 
   - name: emailservice
-    newName: gcr.io/google-samples/microservices-demo/emailservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/emailservice
+    newTag: 1f7eb85
 
   - name: frontend
-    newName: gcr.io/google-samples/microservices-demo/frontend
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/frontend
+    newTag: 1f7eb85
 
   - name: paymentservice
-    newName: gcr.io/google-samples/microservices-demo/paymentservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/paymentservice
+    newTag: 1f7eb85
 
   - name: productcatalogservice
-    newName: gcr.io/google-samples/microservices-demo/productcatalogservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/productcatalogservice
+    newTag: 1f7eb85
 
   - name: recommendationservice
-    newName: gcr.io/google-samples/microservices-demo/recommendationservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/recommendationservice
+    newTag: 1f7eb85
 
   - name: shippingservice
-    newName: gcr.io/google-samples/microservices-demo/shippingservice
-    newTag: v0.10.1
+    newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/shippingservice
+    newTag: 1f7eb85
