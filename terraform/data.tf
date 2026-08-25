@@ -9,3 +9,8 @@ data "aws_subnet" "private_1" {
 data "aws_subnet" "private_2" {
   id = var.subnet_pvt2
 }
+
+data "aws_eks_cluster" "cluster" {
+  name = "var.eks_cluster_name" 
+}
+
