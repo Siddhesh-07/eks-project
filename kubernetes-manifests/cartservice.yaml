@@ -35,10 +35,10 @@ spec:
         - containerPort: 7070
         env:
         - name: REDIS_ADDR
-        valueFrom:
-          secretKeyRef:
-            name: cart-redis
-            key: redis-addr
+          valueFrom:
+            secretKeyRef:
+              name: cart-redis
+              key: redis-addr
         resources:
           requests:
             cpu: 200m
