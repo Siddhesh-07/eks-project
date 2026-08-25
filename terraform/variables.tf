@@ -36,7 +36,7 @@ variable "kubernetes_version" {
 variable "github_repository" {
   description = "GitHub repository in owner/repository format"
   type        = string
-  default     = "Siddhesh-07@71758756/eks-project@1342643665" # get this by github cli- -- gh api repos/Siddhesh-07/eks-project/actions/oidc/customization/sub
+  default     = "Siddhesh-07@71758756/eks-project@1342643665" # get this by github cli --- gh api repos/Siddhesh-07/eks-project/actions/oidc/customization/sub
 }
 
 variable "github_branch" {
