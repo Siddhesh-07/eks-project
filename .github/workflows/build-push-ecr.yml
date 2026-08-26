@@ -6,6 +6,13 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/build-push-ecr.yml'
+  workflow_dispatch:
+    inputs:
+      build_all:
+        description: 'Force build all services regardless of file changes?'
+        required: true
+        type: boolean
+        default: true
 
 permissions:
   id-token: write
@@ -32,6 +39,7 @@ jobs:
 
       - name: Get changed files
         id: changed-files
+        if: github.event_name == 'push' && github.event.inputs.build_all != 'true'
         uses: tj-actions/changed-files@v44
         with:
           files_yaml: |
@@ -61,17 +69,34 @@ jobs:
         run: |
           SERVICES=()
 
-          # Map service names to their respective build contexts
-          [[ "${{ steps.changed-files.outputs.adservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"adservice","path":"./src/adservice"}')
-          [[ "${{ steps.changed-files.outputs.cartservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"cartservice","path":"./src/cartservice/src"}')
-          [[ "${{ steps.changed-files.outputs.checkoutservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"checkoutservice","path":"./src/checkoutservice"}')
-          [[ "${{ steps.changed-files.outputs.currencyservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"currencyservice","path":"./src/currencyservice"}')
-          [[ "${{ steps.changed-files.outputs.emailservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"emailservice","path":"./src/emailservice"}')
-          [[ "${{ steps.changed-files.outputs.frontend_any_changed }}" == "true" ]] && SERVICES+=('{"name":"frontend","path":"./src/frontend"}')
-          [[ "${{ steps.changed-files.outputs.paymentservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"paymentservice","path":"./src/paymentservice"}')
-          [[ "${{ steps.changed-files.outputs.productcatalogservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"productcatalogservice","path":"./src/productcatalogservice"}')
-          [[ "${{ steps.changed-files.outputs.recommendationservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"recommendationservice","path":"./src/recommendationservice"}')
-          [[ "${{ steps.changed-files.outputs.shippingservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"shippingservice","path":"./src/shippingservice"}')
+          # Force build all services if triggered via workflow_dispatch (or build_all is set)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.build_all }}" == "true" ]]; then
+            echo "Manual dispatch detected. Forcing build for ALL services..."
+            SERVICES+=(
+              '{"name":"adservice","path":"./src/adservice"}'
+              '{"name":"cartservice","path":"./src/cartservice/src"}'
+              '{"name":"checkoutservice","path":"./src/checkoutservice"}'
+              '{"name":"currencyservice","path":"./src/currencyservice"}'
+              '{"name":"emailservice","path":"./src/emailservice"}'
+              '{"name":"frontend","path":"./src/frontend"}'
+              '{"name":"paymentservice","path":"./src/paymentservice"}'
+              '{"name":"productcatalogservice","path":"./src/productcatalogservice"}'
+              '{"name":"recommendationservice","path":"./src/recommendationservice"}'
+              '{"name":"shippingservice","path":"./src/shippingservice"}'
+            )
+          else
+            # Map service names dynamically based on push changes
+            [[ "${{ steps.changed-files.outputs.adservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"adservice","path":"./src/adservice"}')
+            [[ "${{ steps.changed-files.outputs.cartservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"cartservice","path":"./src/cartservice/src"}')
+            [[ "${{ steps.changed-files.outputs.checkoutservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"checkoutservice","path":"./src/checkoutservice"}')
+            [[ "${{ steps.changed-files.outputs.currencyservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"currencyservice","path":"./src/currencyservice"}')
+            [[ "${{ steps.changed-files.outputs.emailservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"emailservice","path":"./src/emailservice"}')
+            [[ "${{ steps.changed-files.outputs.frontend_any_changed }}" == "true" ]] && SERVICES+=('{"name":"frontend","path":"./src/frontend"}')
+            [[ "${{ steps.changed-files.outputs.paymentservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"paymentservice","path":"./src/paymentservice"}')
+            [[ "${{ steps.changed-files.outputs.productcatalogservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"productcatalogservice","path":"./src/productcatalogservice"}')
+            [[ "${{ steps.changed-files.outputs.recommendationservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"recommendationservice","path":"./src/recommendationservice"}')
+            [[ "${{ steps.changed-files.outputs.shippingservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"shippingservice","path":"./src/shippingservice"}')
+          fi
 
           if [ ${#SERVICES[@]} -eq 0 ]; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
