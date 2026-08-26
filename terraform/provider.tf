@@ -14,6 +14,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.17"
     }
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = "~> 1.14"
+    }
   }
 }
 
@@ -35,6 +39,12 @@ provider "helm" {
   }
 }
 
+provider "kubectl" {
+  host                   = aws_eks_cluster.project_eks.endpoint
+  cluster_ca_certificate = base64decode(aws_eks_cluster.project_eks.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.project_eks.token
+}
+
 resource "kubernetes_secret" "cart_redis" {
   metadata {
     name      = "cart-redis"
@@ -46,4 +56,17 @@ resource "kubernetes_secret" "cart_redis" {
   data = {
     "redis-addr" = "${aws_elasticache_replication_group.redis.primary_endpoint_address}:6379"
   }
+}
+
+resource "helm_release" "metrics_server" {
+  name             = "metrics-server"
+  namespace        = "kube-system"
+  create_namespace = false
+
+  repository = "https://kubernetes-sigs.github.io/metrics-server/"
+  chart      = "metrics-server"
+
+  depends_on = [
+    aws_eks_cluster.project_eks
+  ]
 }
