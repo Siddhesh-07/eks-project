@@ -16,11 +16,83 @@ env:
 
 jobs:
   # =====================================================
-  # JOB 1: BUILD AND PUSH IMAGES
+  # JOB 1: DETECT CHANGED SERVICES
+  # =====================================================
+  detect-changes:
+    name: Detect Changed Microservices
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has_changes: ${{ steps.set-matrix.outputs.has_changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files_yaml: |
+            adservice:
+              - 'src/adservice/**'
+            cartservice:
+              - 'src/cartservice/**'
+            checkoutservice:
+              - 'src/checkoutservice/**'
+            currencyservice:
+              - 'src/currencyservice/**'
+            emailservice:
+              - 'src/emailservice/**'
+            frontend:
+              - 'src/frontend/**'
+            paymentservice:
+              - 'src/paymentservice/**'
+            productcatalogservice:
+              - 'src/productcatalogservice/**'
+            recommendationservice:
+              - 'src/recommendationservice/**'
+            shippingservice:
+              - 'src/shippingservice/**'
+
+      - name: Generate Build Matrix
+        id: set-matrix
+        run: |
+          SERVICES=()
+
+          # Map service names to their respective build contexts
+          [[ "${{ steps.changed-files.outputs.adservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"adservice","path":"./src/adservice"}')
+          [[ "${{ steps.changed-files.outputs.cartservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"cartservice","path":"./src/cartservice/src"}')
+          [[ "${{ steps.changed-files.outputs.checkoutservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"checkoutservice","path":"./src/checkoutservice"}')
+          [[ "${{ steps.changed-files.outputs.currencyservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"currencyservice","path":"./src/currencyservice"}')
+          [[ "${{ steps.changed-files.outputs.emailservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"emailservice","path":"./src/emailservice"}')
+          [[ "${{ steps.changed-files.outputs.frontend_any_changed }}" == "true" ]] && SERVICES+=('{"name":"frontend","path":"./src/frontend"}')
+          [[ "${{ steps.changed-files.outputs.paymentservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"paymentservice","path":"./src/paymentservice"}')
+          [[ "${{ steps.changed-files.outputs.productcatalogservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"productcatalogservice","path":"./src/productcatalogservice"}')
+          [[ "${{ steps.changed-files.outputs.recommendationservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"recommendationservice","path":"./src/recommendationservice"}')
+          [[ "${{ steps.changed-files.outputs.shippingservice_any_changed }}" == "true" ]] && SERVICES+=('{"name":"shippingservice","path":"./src/shippingservice"}')
+
+          if [ ${#SERVICES[@]} -eq 0 ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "matrix={\"include\":[]}" >> "$GITHUB_OUTPUT"
+          else
+            JSON=$(jq -c -n --argjson list "$(printf '%s\n' "${SERVICES[@]}" | jq -s '.')" '{include: $list}')
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
+          fi
+
+  # =====================================================
+  # JOB 2: BUILD AND PUSH CHANGED IMAGES
   # =====================================================
   build-and-push:
-    name: Build and Push Microservices
+    name: Build & Push (${{ matrix.name }})
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
 
     steps:
       - name: Checkout code
@@ -37,71 +109,49 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Set image tag
-        run: |
-          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
 
-      - name: Build and push all services
+      - name: Build and push microservice
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          services=(
-            "adservice:./src/adservice"
-            "cartservice:./src/cartservice/src"
-            "checkoutservice:./src/checkoutservice"
-            "currencyservice:./src/currencyservice"
-            "emailservice:./src/emailservice"
-            "frontend:./src/frontend"
-            "paymentservice:./src/paymentservice"
-            "productcatalogservice:./src/productcatalogservice"
-            "recommendationservice:./src/recommendationservice"
-            "shippingservice:./src/shippingservice"
-          )
-
-          for service in "${services[@]}"; do
-            NAME="${service%%:*}"
-            PATH_DIR="${service#*:}"
-
-            echo "=== Building and Pushing $NAME from $PATH_DIR ==="
-
-            docker build \
-              -t "$ECR_REGISTRY/online-boutique/$NAME:$IMAGE_TAG" \
-              "$PATH_DIR"
-
-            docker push \
-              "$ECR_REGISTRY/online-boutique/$NAME:$IMAGE_TAG"
-          done
-
-      - name: Display image tag
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          echo "Images successfully pushed with tag: $IMAGE_TAG"
-          echo "ECR Registry used: $ECR_REGISTRY"
+          echo "=== Building ${{ matrix.name }} from ${{ matrix.path }} ==="
+          docker build -t "$ECR_REGISTRY/online-boutique/${{ matrix.name }}:$IMAGE_TAG" "${{ matrix.path }}"
+          docker push "$ECR_REGISTRY/online-boutique/${{ matrix.name }}:$IMAGE_TAG"
 
   # =====================================================
-  # JOB 2: UPDATE KUSTOMIZE
+  # JOB 3: UPDATE SPECIFIC KUSTOMIZE TAGS
   # =====================================================
   update-manifests:
-    name: Update Kubernetes Image Tags
-    needs: build-and-push
+    name: Update Kustomize Image Tags
+    needs: [detect-changes, build-and-push]
+    if: needs.detect-changes.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
 
       - name: Set image tag
+        run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Selectively update altered service tags
         run: |
-          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          cd kubernetes-manifests
 
-      - name: Update Kustomize image tags
-        run: |
-          KUSTOMIZATION_FILE="kubernetes-manifests/kustomization.yaml"
+          # Read matrix array of updated services
+          SERVICES_JSON='${{ needs.detect-changes.outputs.matrix }}'
+          NAMES=$(echo "$SERVICES_JSON" | jq -r '.include[].name')
 
-          sed -i "s/newTag: .*/newTag: $IMAGE_TAG/g" "$KUSTOMIZATION_FILE"
-
-          echo "Updated image tags to:"
-          grep "newTag:" "$KUSTOMIZATION_FILE"
+          for NAME in $NAMES; do
+            echo "Updating tag for service: $NAME -> $IMAGE_TAG"
+            kustomize edit set image "$NAME=*:$IMAGE_TAG"
+          done
 
       - name: Commit and push manifest changes
         run: |
@@ -115,7 +165,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore(gitops): update image tags to $IMAGE_TAG"
-
+          git commit -m "chore(gitops): update tags for modified services to ${GITHUB_SHA::7}"
           git pull --rebase origin main
-          git push
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
