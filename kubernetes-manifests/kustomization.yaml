@@ -41,40 +41,40 @@ resources:
 images:
   - name: adservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/adservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: cartservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/cartservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: checkoutservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/checkoutservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: currencyservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/currencyservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: emailservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/emailservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: frontend
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/frontend
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: paymentservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/paymentservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: productcatalogservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/productcatalogservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: recommendationservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/recommendationservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
 
   - name: shippingservice
     newName: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique/shippingservice
-    newTag: 1f7eb85
+    newTag: 0b990d9
