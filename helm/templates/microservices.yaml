@@ -1,0 +1,259 @@
+{{- $global := .Values.global -}}
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled (ne $name "loadgenerator") }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+    {{- include "online-boutique.labels" $ | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+    {{- include "online-boutique.labels" $ | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ $name }}
+  ports:
+  - name: {{ if eq $name "frontend" }}http{{ else }}grpc{{ end }}
+    port: {{ $svc.servicePort }}
+    targetPort: {{ $svc.containerPort }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+    {{- include "online-boutique.labels" $ | nindent 4 }}
+spec:
+  {{- if $svc.replicas }}
+  replicas: {{ $svc.replicas }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+      {{- if eq $name "frontend" }}
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"[cite: 6]
+      {{- end }}
+    spec:
+      serviceAccountName: {{ $name }}
+      {{- if or (eq $name "adservice") (eq $name "cartservice") (eq $name "currencyservice") (eq $name "emailservice") (eq $name "productcatalogservice") (eq $name "recommendationservice") (eq $name "paymentservice") }}
+      terminationGracePeriodSeconds: 5[cite: 1, 2, 4, 5, 9, 10, 11]
+      {{- end }}
+      securityContext:
+        fsGroup: 1000[cite: 1]
+        runAsGroup: 1000[cite: 1]
+        runAsNonRoot: true[cite: 1]
+        runAsUser: 1000[cite: 1]
+      containers:
+      - name: server
+        securityContext:
+          allowPrivilegeEscalation: false[cite: 1]
+          capabilities:
+            drop:
+              - ALL[cite: 1]
+          privileged: false[cite: 1]
+          readOnlyRootFilesystem: true[cite: 1]
+        image: "{{ $global.imageRegistry }}/{{ $name }}:{{ default $global.imageTag $svc.imageTag }}"
+        ports:
+        - containerPort: {{ $svc.containerPort }}
+        env:
+        - name: PORT
+          value: "{{ $svc.containerPort }}"
+        {{- if eq $name "cartservice" }}
+        - name: REDIS_ADDR
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.cartRedisSecretName }}
+              key: redis-addr[cite: 2]
+        {{- end }}
+        {{- if or (eq $name "currencyservice") (eq $name "emailservice") (eq $name "paymentservice") (eq $name "productcatalogservice") (eq $name "recommendationservice") (eq $name "shippingservice") }}
+        - name: DISABLE_PROFILER
+          value: "1"[cite: 4, 5, 9, 10, 11, 12]
+        {{- end }}
+        {{- if eq $name "checkoutservice" }}
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"[cite: 3]
+        - name: SHIPPING_SERVICE_ADDR
+          value: "shippingservice:50051"[cite: 3]
+        - name: PAYMENT_SERVICE_ADDR
+          value: "paymentservice:50051"[cite: 3]
+        - name: EMAIL_SERVICE_ADDR
+          value: "emailservice:5000"[cite: 3]
+        - name: CURRENCY_SERVICE_ADDR
+          value: "currencyservice:7000"[cite: 3]
+        - name: CART_SERVICE_ADDR
+          value: "cartservice:7070"[cite: 3]
+        {{- end }}
+        {{- if eq $name "frontend" }}
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"[cite: 6]
+        - name: CURRENCY_SERVICE_ADDR
+          value: "currencyservice:7000"[cite: 6]
+        - name: CART_SERVICE_ADDR
+          value: "cartservice:7070"[cite: 6]
+        - name: RECOMMENDATION_SERVICE_ADDR
+          value: "recommendationservice:8080"[cite: 6]
+        - name: SHIPPING_SERVICE_ADDR
+          value: "shippingservice:50051"[cite: 6]
+        - name: CHECKOUT_SERVICE_ADDR
+          value: "checkoutservice:5050"[cite: 6]
+        - name: AD_SERVICE_ADDR
+          value: "adservice:9555"[cite: 6]
+        - name: SHOPPING_ASSISTANT_SERVICE_ADDR
+          value: "shoppingassistantservice:80"[cite: 6]
+        - name: ENABLE_PROFILER
+          value: "0"[cite: 6]
+        {{- end }}
+        {{- if eq $name "recommendationservice" }}
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"[cite: 11]
+        {{- end }}
+        {{- if eq $name "frontend" }}
+        readinessProbe:
+          initialDelaySeconds: 10[cite: 6]
+          httpGet:
+            path: "/_healthz"[cite: 6]
+            port: 8080[cite: 6]
+            httpHeaders:
+            - name: "Cookie"[cite: 6]
+              value: "shop_session-id=x-readiness-probe"[cite: 6]
+        livenessProbe:
+          initialDelaySeconds: 10[cite: 6]
+          httpGet:
+            path: "/_healthz"[cite: 6]
+            port: 8080[cite: 6]
+            httpHeaders:
+            - name: "Cookie"[cite: 6]
+              value: "shop_session-id=x-liveness-probe"[cite: 6]
+        {{- else }}
+        readinessProbe:
+          {{- if eq $name "adservice" }}
+          initialDelaySeconds: 20[cite: 1]
+          periodSeconds: 15[cite: 1]
+          {{- else if eq $name "cartservice" }}
+          initialDelaySeconds: 15[cite: 2]
+          {{- else if or (eq $name "emailservice") (eq $name "recommendationservice") (eq $name "shippingservice") }}
+          periodSeconds: 5[cite: 5, 11, 12]
+          {{- end }}
+          grpc:
+            port: {{ $svc.containerPort }}
+        livenessProbe:
+          {{- if eq $name "adservice" }}
+          initialDelaySeconds: 20[cite: 1]
+          periodSeconds: 15[cite: 1]
+          {{- else if eq $name "cartservice" }}
+          initialDelaySeconds: 15[cite: 2]
+          periodSeconds: 10[cite: 2]
+          {{- else if or (eq $name "emailservice") (eq $name "recommendationservice") }}
+          periodSeconds: 5[cite: 5, 11]
+          {{- end }}
+          grpc:
+            port: {{ $svc.containerPort }}
+        {{- end }}
+        resources:
+          {{- toYaml $svc.resources | nindent 10 }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.services.loadgenerator.enabled }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: loadgenerator
+  labels:
+    app: loadgenerator
+    {{- include "online-boutique.labels" . | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgenerator
+  labels:
+    app: loadgenerator
+    {{- include "online-boutique.labels" . | nindent 4 }}
+spec:
+  replicas: 1[cite: 8]
+  selector:
+    matchLabels:
+      app: loadgenerator
+  template:
+    metadata:
+      labels:
+        app: loadgenerator
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"[cite: 8]
+    spec:
+      serviceAccountName: loadgenerator
+      terminationGracePeriodSeconds: 5[cite: 8]
+      restartPolicy: Always[cite: 8]
+      securityContext:
+        fsGroup: 1000[cite: 8]
+        runAsGroup: 1000[cite: 8]
+        runAsNonRoot: true[cite: 8]
+        runAsUser: 1000[cite: 8]
+      initContainers:
+      - command:
+        - /bin/sh
+        - -exc
+        - |
+          MAX_RETRIES=12
+          RETRY_INTERVAL=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i: Pinging frontend: ${FRONTEND_ADDR}..."
+            STATUSCODE=$(wget --server-response http://${FRONTEND_ADDR} 2>&1 | awk '/^  HTTP/{print $2}')
+            if [ $STATUSCODE -eq 200 ]; then
+                echo "Frontend is reachable."
+                exit 0
+            fi
+            echo "Error: Could not reach frontend - Status code: ${STATUSCODE}"
+            sleep $RETRY_INTERVAL
+          done
+          echo "Failed to reach frontend after $MAX_RETRIES attempts."
+          exit 1[cite: 8]
+        name: frontend-check[cite: 8]
+        securityContext:
+          allowPrivilegeEscalation: false[cite: 8]
+          capabilities:
+            drop:
+              - ALL[cite: 8]
+          privileged: false[cite: 8]
+          readOnlyRootFilesystem: true[cite: 8]
+        image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d[cite: 8]
+        env:
+        - name: FRONTEND_ADDR
+          value: "frontend:80"[cite: 8]
+      containers:
+      - name: main
+        securityContext:
+          allowPrivilegeEscalation: false[cite: 8]
+          capabilities:
+            drop:
+              - ALL[cite: 8]
+          privileged: false[cite: 8]
+          readOnlyRootFilesystem: true[cite: 8]
+        image: "{{ $global.imageRegistry }}/loadgenerator:{{ default $global.imageTag .Values.services.loadgenerator.imageTag }}"
+        env:
+        - name: FRONTEND_ADDR
+          value: "frontend:80"[cite: 8]
+        - name: USERS
+          value: "10"[cite: 8]
+        - name: RATE
+          value: "1"[cite: 8]
+        resources:
+          {{- toYaml .Values.services.loadgenerator.resources | nindent 10 }}
+{{- end }}
