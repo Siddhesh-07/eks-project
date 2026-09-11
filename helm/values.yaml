@@ -1,0 +1,113 @@
+global:
+  imageRegistry: 317990169591.dkr.ecr.us-east-1.amazonaws.com/online-boutique[cite: 7]
+  imageTag: 0b990d9[cite: 7]
+
+cartRedisSecretName: cart-redis[cite: 2]
+
+ingress:
+  enabled: true
+  className: alb[cite: 6]
+  scheme: internet-facing[cite: 6]
+  targetType: ip[cite: 6]
+
+services:
+  adservice:
+    enabled: true
+    containerPort: 9555[cite: 1]
+    servicePort: 9555[cite: 1]
+    resources:
+      requests: { cpu: 200m, memory: 180Mi }[cite: 1]
+      limits: { cpu: 300m, memory: 300Mi }[cite: 1]
+
+  cartservice:
+    enabled: true
+    replicas: 2[cite: 2]
+    containerPort: 7070[cite: 2]
+    servicePort: 7070[cite: 2]
+    resources:
+      requests: { cpu: 200m, memory: 64Mi }[cite: 2]
+      limits: { cpu: 300m, memory: 128Mi }[cite: 2]
+    hpa:
+      enabled: true
+      minReplicas: 2[cite: 2]
+      maxReplicas: 5[cite: 2]
+      targetCPUUtilizationPercentage: 60[cite: 2]
+
+  checkoutservice:
+    enabled: true
+    containerPort: 5050[cite: 3]
+    servicePort: 5050[cite: 3]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 3]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 3]
+
+  currencyservice:
+    enabled: true
+    containerPort: 7000[cite: 4]
+    servicePort: 7000[cite: 4]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 4]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 4]
+
+  emailservice:
+    enabled: true
+    containerPort: 8080[cite: 5]
+    servicePort: 5000[cite: 5]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 5]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 5]
+
+  frontend:
+    enabled: true
+    replicas: 2[cite: 6]
+    containerPort: 8080[cite: 6]
+    servicePort: 80[cite: 6]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 6]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 6]
+    hpa:
+      enabled: true
+      minReplicas: 2[cite: 6]
+      maxReplicas: 4[cite: 6]
+      targetCPUUtilizationPercentage: 60[cite: 6]
+
+  loadgenerator:
+    enabled: true
+    image:
+      repository: loadgenerator
+    resources:
+      requests: { cpu: 300m, memory: 256Mi }[cite: 8]
+      limits: { cpu: 500m, memory: 512Mi }[cite: 8]
+
+  paymentservice:
+    enabled: true
+    containerPort: 50051[cite: 9]
+    servicePort: 50051[cite: 9]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 9]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 9]
+
+  productcatalogservice:
+    enabled: true
+    containerPort: 3550[cite: 10]
+    servicePort: 3550[cite: 10]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 10]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 10]
+
+  recommendationservice:
+    enabled: true
+    containerPort: 8080[cite: 11]
+    servicePort: 8080[cite: 11]
+    resources:
+      requests: { cpu: 100m, memory: 220Mi }[cite: 11]
+      limits: { cpu: 200m, memory: 450Mi }[cite: 11]
+
+  shippingservice:
+    enabled: true
+    imageTag: 933730c[cite: 7]
+    containerPort: 50051[cite: 12]
+    servicePort: 50051[cite: 12]
+    resources:
+      requests: { cpu: 100m, memory: 64Mi }[cite: 12]
+      limits: { cpu: 200m, memory: 128Mi }[cite: 12]
