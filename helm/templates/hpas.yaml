@@ -1,0 +1,44 @@
+{{- range $name, $svc := .Values.services }}
+{{- if and $svc.enabled $svc.hpa $svc.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $name }}-hpa
+  labels:
+    app: {{ $name }}
+    {{- include "online-boutique.labels" $ | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $name }}[cite: 2, 6]
+  minReplicas: {{ $svc.hpa.minReplicas }}[cite: 2, 6]
+  maxReplicas: {{ $svc.hpa.maxReplicas }}[cite: 2, 6]
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $svc.hpa.targetCPUUtilizationPercentage }}[cite: 2, 6]
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0[cite: 2, 6]
+      policies:
+        - type: Percent
+          value: 100[cite: 2, 6]
+          periodSeconds: 60[cite: 2, 6]
+        - type: Pods
+          value: 2[cite: 2, 6]
+          periodSeconds: 60[cite: 2, 6]
+      selectPolicy: Max[cite: 2, 6]
+    scaleDown:
+      stabilizationWindowSeconds: 300[cite: 2, 6]
+      policies:
+        - type: Percent
+          value: 25[cite: 2, 6]
+          periodSeconds: 60[cite: 2, 6]
+      selectPolicy: Max[cite: 2, 6]
+{{- end }}
+{{- end }}
