@@ -1,0 +1,27 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  labels:
+    app: frontend
+    {{- include "online-boutique.labels" . | nindent 4 }}
+  annotations:
+    alb.ingress.kubernetes.io/scheme: {{ .Values.ingress.scheme }}[cite: 6]
+    alb.ingress.kubernetes.io/target-type: {{ .Values.ingress.targetType }}[cite: 6]
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'[cite: 6]
+    alb.ingress.kubernetes.io/healthcheck-path: /_healthz[cite: 6]
+    alb.ingress.kubernetes.io/healthcheck-port: "8080"[cite: 6]
+spec:
+  ingressClassName: {{ .Values.ingress.className }}[cite: 6]
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: {{ .Values.services.frontend.servicePort }}[cite: 6]
+{{- end }}
